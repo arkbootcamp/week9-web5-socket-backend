@@ -7,7 +7,9 @@ const cors = require('cors')
 const morgan = require('morgan')
 const socket = require('socket.io')
 const { emit } = require('process')
-
+const modelMessage = require('./src/model/message')
+const moment = require('moment')
+moment.locale('id');
 app.use(cors())
 app.use(morgan('dev'))
 // initial socket
@@ -22,15 +24,33 @@ io.on("connection", (socket) => {
   console.log('ada client yang connect '+socket.id);
 
   socket.on('initialUser', (dataUser)=>{
-    socket.join('12312')
+    socket.join('room:'+dataUser.room)
     console.log('user :'+dataUser.username + ' join ke '+dataUser.room);
     socket.broadcast.to('room:' + dataUser.room).emit('kirimKembali', `Both: ${dataUser.username} join group `)
   })
 
-  socket.on('reciverMessage',(data)=>{
+  socket.on('reciverMessage',(data, callback)=>{
     console.log('data yg dikirim dari client = '+data);
+    // callback(data.message)
+    // const data = {
+    //   bodyMessage: '',
+    //   senderId: 1,
+    //   reciverId: 2
+    // }
+    // modelMessage.insertMessage(bodyMessage)
+    // .then((res)=>{
 
-    io.to('room:'+data.room).emit('kirimKembali', data.message)
+    // })
+
+    const formatMessage = {
+      message: data.message,
+      senderId: data.senderId,
+      time: moment(new Date()).format('LT')
+    }
+    console.log(formatMessage);
+    socket.broadcast.to('room:' + data.room).emit('kirimKembali', formatMessage)
+    socket.emit('kirimKembali', formatMessage)
+    
   })
 
   socket.on("disconnect", () => {
